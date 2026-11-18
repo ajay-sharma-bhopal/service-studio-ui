@@ -1,6 +1,6 @@
 ---
 name: service-studio-ui
-description: Drive the OutSystems Service Studio 11 desktop UI through the windows-mcp tools - open a module from the server/environment, add or remove dependencies (Manage Dependencies, e.g. System AbortTransaction, Forge/library actions), publish (1-Click Publish), close modules, and navigate to actions/screens. Use this whenever the user asks to open, load, close or switch to an O11 module, add a dependency/reference, refresh references, publish a module, or otherwise do something in Service Studio that the servicestudio MCP cannot do on its own - even if they just say "open <app> module" or "add AbortTransaction".
+description: Drive the OutSystems Service Studio 11 desktop UI through the windows-mcp tools - open a module from the server/environment, add or remove dependencies (Manage Dependencies, e.g. System AbortTransaction, Forge/library actions), publish (1-Click Publish), close modules, create new applications and modules (only after explicit user consent), and navigate to actions/screens. Use this whenever the user asks to open, load, close or switch to an O11 module, add a dependency/reference, refresh references, publish a module, create a new app or module, or otherwise do something in Service Studio that the servicestudio MCP cannot do on its own - even if they just say "open <app> module" or "add AbortTransaction".
 ---
 
 # Service Studio UI automation
@@ -41,7 +41,7 @@ The UI is slow and loads asynchronously, so most of the cost is waiting and veri
 
 1. Bring Service Studio to the front (`App` mode `switch`, name `Service Studio`) and take a screenshot.
 2. **Already open?** If the module already has a tab in the tab strip, click that tab instead of opening it again, and say so in your report.
-3. Open the **Open from Environment** dialog with **Ctrl+O**. This is the fastest route, and it works from any tab. If the shortcut doesn't respond, go to the environment tab (titled "<Environment> - <host>") and click **Search Modules**, the button at the bottom of the left panel under "Recent modules". The dialog shows "Getting modules information…" for a few seconds.
+3. Open the **Open from Environment** dialog with **Ctrl+O**. This is the fastest route, and it works from any tab. If the shortcut doesn't respond, go to the environment tab (titled "<Environment> - <host>") and click **Search Modules**, the button at the bottom of the left panel under "Recent modules". The dialog shows "Getting modules information…" for a few seconds. **Always open from the server this way.** Don't click entries in the Recent modules list or open local .oml files, even when the module is listed there: the user wants the latest server version.
 4. Type the name into the search box at the top of the dialog, using `clear: true`. The list filters **2–4 s after** you type, so wait before reading the results. An unfiltered A–Z list just means it hasn't caught up yet.
 5. **Resolve informal names.** Users say things like "the foo go module". Match the name without spaces or case (`FooOnGo`). If several modules match (`_BL`, `_Sync`, `_Theme`, `_CS`, …), open the one with **no suffix**, which is usually the app's main/UI module. Tell the user which one you opened and list the siblings, so they can redirect you in one word. If nothing matches, say so and list the closest names; don't open a guess.
 6. Double-click the row. A new tab opens and "Getting references from …" runs for about 15–30 s.
@@ -84,7 +84,38 @@ Publishing deploys to a shared environment that other developers use, so **ask b
 5. It's done when the tab is gone and the environment tab (or another module tab) is showing.
 6. **Closing several modules:** repeat steps 1–5 one tab at a time, checking each title. Don't use "close all" style options unless the user asked for all of them to close.
 
-## Flow 5 — Find an action, screen or entity
+## Flow 5 — Create a new application or module (consent required)
+
+Creating an application or module adds it to the shared environment, where everyone can see it. Removing it again means deleting it in Service Center, so it isn't easily undone. That's why this flow needs **explicit consent for the exact details**, every time.
+
+**Consent gate (do this before any Create click):**
+1. Collect the details. Ask for anything missing; don't invent names.
+   - **New application:** name, application type (Reactive Web App, Phone App, Tablet App or Service), and template/theme if the user cares. Description and icon are optional.
+   - **New module:** the application it goes into, module name, and module type (Reactive Web App, Blank, Service, Library, Extension, …).
+2. **Check the name is free.** Press Ctrl+O and search for the module name; on the environment tab, search for the application name. If it already exists, stop and tell the user. Don't create a near-duplicate.
+3. **Check the naming convention.** If the name doesn't fit the layer the user describes (for example a Core module without `_CS`/`_BL`, or a Library without `_Lib`), point it out and suggest a name, but use whatever the user decides.
+4. **Show a summary and ask for a yes**, for example: "Create module **Foo_CS** (type: Service) in application **Foo**, on <environment>? (yes/no)". Only an explicit yes to that summary counts. A general "go ahead" from earlier in the conversation, or consent for a different name or type, does not. If the user changes any detail, ask again.
+
+**Create a new application** (only after a yes):
+1. On the environment tab, click the **New Application** tile, the first tile in the application grid. The dialog opens blank and takes a few seconds to fill in.
+2. **"How do you want to start?"** Click **From scratch** (or **From an app** if the user asked for a ready-made app), then **Next** at the bottom right.
+3. **"What are you building?"** Click the type card (Reactive Web App, Tablet App, Phone App; scroll for External Web Portal, Plugin, Service), then **Next**.
+4. **"Fill in your app's basic info"**: type the **Name** (`clear: true`), plus Description and color/icon only if the user gave them. Service Studio 11.55 has no separate template step here. Check the name on a screenshot.
+5. Click **Create App**. The dialog greys out for 5–15 s. **Creating the app registers it on the server right away**, so it's in the environment from this point.
+6. The application page opens, showing the app name with Edit / Delete / Download buttons and a **Modules** form already prefilled: Module name = the app name, type = the app's type. If the user wants that first module, check both fields against the approved summary and continue with **Create a new module** at step 3. The module was part of the same consent only if your summary listed it. If not, click **Cancel** on the form.
+
+**Create a new module** (only after a yes):
+1. Open the target application's page: on the environment tab, search for the application in "Search Applications…" and click its tile. Check on a screenshot that it's the right application.
+2. Click **Add Module** (or **Create Module** if the application is empty).
+3. Enter the module **name** (`clear: true`) and choose the module **type**. Check both on a screenshot against the summary the user approved. If anything differs, fix it before going on.
+4. Click **Create Module**, then take a screenshot. The first click sometimes only focuses the form (the name field loses its highlight but nothing else happens). If no new tab has appeared after about 5 s, click once more. Never click more than twice, and check the tab strip first so you don't create a duplicate.
+5. It's done when a new tab titled `* <Module> (<App>)` opens with **1-Click Publish** at the top. A new Reactive module shows MainFlow, Common and Layouts, plus OutSystemsUI, Charts and Maps references.
+6. **The new module isn't on the server yet.** The `*` means it exists only in this Service Studio session until its first publish; only the application is already on the server. Say this in the report.
+7. **Don't publish.** Publishing the new module is a separate decision under Flow 3, which needs its own consent. If the user doesn't want the module, close the tab and pick **Don't Save** (only when they say so). The empty application then stays on the server until someone deletes it.
+
+Labels on these screens can differ slightly between Service Studio versions. If a button isn't where this flow says, find it on a screenshot by its label. If you can't, stop and describe what you see; don't click around guessing.
+
+## Flow 6 — Find an action, screen or entity
 
 - Prefer the servicestudio MCP (`getActionNames`, `getScreenNames`, `getServerAction`, …) to read the model without clicking around.
 - To show the user something in the UI, use the search box: the magnifier icon at the top right, or Ctrl+F. Type the name and double-click the result.
@@ -93,6 +124,6 @@ Publishing deploys to a shared environment that other developers use, so **ask b
 
 After each flow, report in one or two lines:
 - what changed, naming the exact module or element you picked if you had to resolve an informal name
-- anything skipped and why (not found / not public, already referenced, architecture check, TrueChange errors, merge prompt, retry limit)
+- anything skipped and why (not found / not public, already referenced, architecture check, TrueChange errors, merge prompt, retry limit, no consent / name already taken)
 - whether anything is still unsaved or unpublished (a `*` in the tab title)
 - any alternatives the user might have meant
