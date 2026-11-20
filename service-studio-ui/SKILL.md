@@ -1,7 +1,12 @@
 ---
 name: service-studio-ui
-description: Drive the OutSystems Service Studio 11 desktop UI through the windows-mcp tools - open a module from the server/environment, add or remove dependencies (Manage Dependencies, e.g. System AbortTransaction, Forge/library actions), publish (1-Click Publish), close modules, create new applications and modules (only after explicit user consent), and navigate to actions/screens. Use this whenever the user asks to open, load, close or switch to an O11 module, add a dependency/reference, refresh references, publish a module, create a new app or module, or otherwise do something in Service Studio that the servicestudio MCP cannot do on its own - even if they just say "open <app> module" or "add AbortTransaction".
+description: LAST RESORT. Drive the OutSystems Service Studio 11 desktop UI through the windows-mcp tools, only for what the servicestudio MCP (servicestudio-mcp-oml skill) cannot do - open a module from the server/environment, add or remove dependencies (Manage Dependencies), close modules, create new applications and modules (only after explicit user consent), import resource files. Always try the servicestudio MCP first (reading, editing, merging, refreshing references and publishing via omlPublish all go there). Never drive any app other than Service Studio without the user's consent.
 ---
+
+## Rule 0 — MCP first, UI last (user rule, Nov 20, 2026)
+
+1. **Use the servicestudio MCP first** (`servicestudio-mcp-oml` skill) for everything it can do: reading the model, editing it (`applyModelApiCode` + `omlMerge`), validation, `omlRefreshReferences` and **publishing (`omlPublish`)**. Only use this UI skill when the MCP genuinely can't do the task (open a module from the server, Manage Dependencies, create app/module, import a resource file, close a tab) or the MCP call failed for a reason a retry won't fix. Say in one line why the UI is needed before you start.
+2. **Service Studio only.** windows-mcp may drive Service Studio and its own dialogs (file pickers it opens). To control **any other app** (Teams, Outlook, a browser, Word, the terminal, Explorer…), even to just switch to it, move or resize it, **ask the user first** and wait for a clear yes for that app and that action. Approval for one app or one action doesn't carry over to the next.
 
 # Service Studio UI automation
 
@@ -21,7 +26,8 @@ If the windows-mcp tools aren't available, say so and stop. Don't try to drive t
 
 | Need | Use |
 |---|---|
-| Open a module from the environment, Manage Dependencies, publish, close, switch tabs | **windows-mcp** (UI driving) — the servicestudio MCP cannot do these |
+| Publish a module | **servicestudio MCP `omlPublish`** — use the UI publish (Flow 3) only if `omlPublish` is unavailable or blocked |
+| Open a module from the environment, Manage Dependencies, create app/module, import a resource, close, switch tabs | **windows-mcp** (UI driving) — the servicestudio MCP cannot do these |
 | Read or edit the model of the *already open* module (actions, screens, entities, validation) | **servicestudio MCP** (`createSessionToken` once per session, then pass the token) |
 
 The UI is slow and loads asynchronously, so most of the cost is waiting and verifying. The rules below exist to cut wasted screenshots and wrong guesses.
